@@ -1,33 +1,36 @@
-import React, { useState } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Modal, TextInput } from 'react-native';
+import React, {useEffect, useState} from "react";
+import {View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert} from 'react-native';
+import NoteList from "@/components/NoteList";
+import noteService from "@/services/noteService";
 
-interface Note {
-    id: string;
-    text: string;
-}
+const NoteScreen = () => {
+    const [notes, setNotes] = useState([]);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [newNote, setNewNote] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-const NoteScreen: React.FC = () => {
-    const [notes, setNotes] = useState<Note[]>([
-        {
-            id: '1',
-            text: 'Note 1',
-        },
-        {
-            id: '2',
-            text: 'Note 2',
-        },
-        {
-            id: '3',
-            text: 'Note 3',
-        },
-    ]);
+    useEffect(() => {
+        fetchNotes();
+    }, []);
 
-    const [modalVisible, setModalVisible] = useState<boolean>(false);
-    const [newNote, setNewNote] = useState<string>('');
+    const fetchNotes = async () => {
+        setLoading(true);
+        const res = await noteService.getNotes();
+
+        if (res.error) {
+            setError(res.error);
+            Alert.alert("Error", res.error);
+        } else {
+            setNotes(res.data || []);
+            setError(null);
+        }
+        setLoading(false);
+    };
 
     const addNote = () => {
         if (newNote.trim()) {
-            const newNoteItem: Note = {
+            const newNoteItem = {
                 id: Date.now().toString(),
                 text: newNote,
             };
@@ -39,17 +42,7 @@ const NoteScreen: React.FC = () => {
 
     return (
         <View style={styles.container}>
-            <FlatList
-                data={notes}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <View style={styles.noteItem}>
-                        <Text style={styles.noteText}>
-                            {item.text}
-                        </Text>
-                    </View>
-                )}
-            />
+            <NoteList notes={notes} />
 
             <TouchableOpacity
                 style={styles.addButton}
@@ -71,6 +64,7 @@ const NoteScreen: React.FC = () => {
                             style={styles.textInput}
                             placeholder="Enter your note"
                             value={newNote}
+                            placeholderTextColor={'#aaa'}
                             onChangeText={setNewNote}
                             multiline={true}
                             numberOfLines={4}
@@ -86,7 +80,7 @@ const NoteScreen: React.FC = () => {
                                 style={[styles.modalButton, styles.addButtonModal]}
                                 onPress={addNote}
                             >
-                                <Text style={styles.buttonText}>Add</Text>
+                                <Text style={styles.buttonText}>Save</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
